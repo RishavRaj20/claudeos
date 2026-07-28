@@ -36,6 +36,16 @@ export async function startDaemon(config: ClaudeOSConfig): Promise<void> {
     .catch(() => {});
 
   const server = createServer(async (req, res) => {
+    // CORS: the daemon is a local API consumed by browser-based clients
+    // (the Tauri dashboard, dev tools). Loopback-only, so * is fine.
+    res.setHeader("access-control-allow-origin", "*");
+    res.setHeader("access-control-allow-methods", "GET, POST, OPTIONS");
+    res.setHeader("access-control-allow-headers", "content-type");
+    if (req.method === "OPTIONS") {
+      res.writeHead(204);
+      res.end();
+      return;
+    }
     const send = (code: number, body: unknown) => {
       res.writeHead(code, { "content-type": "application/json" });
       res.end(JSON.stringify(body, null, 2));

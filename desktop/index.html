@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ClaudeOS</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+    <script type="module" src="/src/main.ts" defer></script>
+  </head>
+  <body>
+    <header>
+      <div class="brand">⚡ <b>ClaudeOS</b><span class="sub">agent operating system</span></div>
+      <div id="daemon-status" class="pill offline">daemon: connecting…</div>
+    </header>
+
+    <main>
+      <aside>
+        <section>
+          <h2>Providers</h2>
+          <ul id="providers" class="list"></ul>
+        </section>
+        <section>
+          <h2>MCP Drivers</h2>
+          <ul id="mcp" class="list"></ul>
+        </section>
+        <section>
+          <h2>Pipelines</h2>
+          <ul id="pipelines" class="list"></ul>
+        </section>
+      </aside>
+
+      <div class="center">
+        <section class="runbox">
+          <textarea id="prompt" rows="3" placeholder="Give ClaudeOS a task…  (⌘⏎ to run)"></textarea>
+          <div class="controls">
+            <select id="provider"><option value="">auto-route</option></select>
+            <select id="pipeline-select"><option value="">no pipeline</option></select>
+            <button id="run">Run ▶</button>
+          </div>
+        </section>
+        <section class="output">
+          <h2>Output</h2>
+          <div id="output"><span class="dim">Results appear here.</span></div>
+        </section>
+        <section>
+          <h2>Recent Runs</h2>
+          <ul id="runs" class="list"></ul>
+        </section>
+      </div>
+
+      <aside class="right">
+        <section class="feed-section">
+          <h2>Live Events</h2>
+          <ul id="feed" class="feed"></ul>
+        </section>
+      </aside>
+    </main>
+  </body>
+</html>

@@ -4,3 +4,6 @@ node_modules/
 .env
 .claude/settings.local.json
 claudeos.config.json
+desktop/src-tauri/target/
+desktop/dist/
+desktop/src-tauri/gen/

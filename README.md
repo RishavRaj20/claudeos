@@ -118,6 +118,16 @@ node src/cli.ts mcp                                     # list drivers + tools
               browser, ...)
 ```
 
+## 🖥 Desktop app (phase 2)
+
+A native [Tauri](https://tauri.app) dashboard lives in [desktop/](desktop/) — provider and MCP driver health, a run console (auto-route, pick a provider, or run a whole pipeline), live WebSocket event feed, and run history. It's a thin client over the daemon's API, so keep `claudeos start` running.
+
+```bash
+cd desktop
+npm install
+npm run tauri dev     # requires Rust (rustup.rs)
+```
+
 ## ⚙️ Configuration
 
 Everything lives in `claudeos.config.json` (gitignored — copy [claudeos.config.example.json](claudeos.config.example.json)):
@@ -153,7 +163,8 @@ Everything lives in `claudeos.config.json` (gitignored — copy [claudeos.config
 - [x] Async tasks + WebSocket streaming — `run --async`, `claudeos task`, `claudeos watch`
 - [x] Embedding-based recall — semantic memory search via local Ollama embeddings (`nomic-embed-text`), with keyword fallback when Ollama is offline
 - [x] Multi-step pipelines — research → implement → verify chains across providers, defined in config, streamed step-by-step over WebSocket
-- [ ] **Phase 2:** Rust core + Tauri desktop UI (attaches to the same daemon API)
+- [x] **Phase 2 (started):** Tauri desktop app (`desktop/`) — native dashboard over the daemon's HTTP/WS API: provider + MCP health, run console with auto-route/provider/pipeline selection, live event feed, run history
+- [ ] Phase 2 continued: streaming output in the UI, memory browser, config editor, packaged builds
 
 ## 🤝 Contributing
 
