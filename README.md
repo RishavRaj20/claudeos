@@ -84,7 +84,9 @@ node src/cli.ts mcp                                     # list drivers + tools
   ```
 - **🧠 Memory injection** — every task automatically receives the most relevant past runs (keyword + recency scoring) inside a `<claudeos-memory>` block, whoever produced them
 - **📓 Human-readable memory** — every run is a markdown file with frontmatter; point Obsidian at `~/.claudeos/memory/` and browse your agents' entire history
-- **🌐 Local HTTP API** — `GET /status`, `GET /mcp`, `POST /run`, `POST /mcp/call` on `:7777`; the CLI is just a client, so any UI can attach (Tauri desktop app coming in phase 2)
+- **📥 Driver registry** — `claudeos mcp registry` lists 9 curated drivers (fetch, github, puppeteer, sqlite, ...); `claudeos mcp install <name>` writes the config for you
+- **⏱ Async tasks + live events** — `claudeos run "..." --async` returns instantly; follow with `claudeos task <id>` or stream every task's lifecycle over WebSocket with `claudeos watch`
+- **🌐 Local HTTP + WS API** — `GET /status`, `GET /mcp`, `POST /run`, `POST /tasks`, `ws://:7777/ws`; the CLI is just a client, so any UI can attach (Tauri desktop app coming in phase 2)
 - **📦 Zero build step** — modern Node runs the TypeScript directly; one runtime dependency worth naming (`@anthropic-ai/sdk`) plus the MCP SDK
 
 ---
@@ -140,9 +142,9 @@ Everything lives in `claudeos.config.json` (gitignored — copy [claudeos.config
 - [x] Regex task routing with fallback
 - [x] MCP client — capability drivers, exposed to the kernel model's agentic loop
 - [x] Memory injection — cross-agent knowledge sharing on every task
+- [x] `claudeos mcp install <name>` — one-command driver registry (9 curated MCP servers)
+- [x] Async tasks + WebSocket streaming — `run --async`, `claudeos task`, `claudeos watch`
 - [ ] Embedding-based recall (via Ollama `nomic-embed-text`)
-- [ ] `claudeos mcp install <name>` — one-command driver registry
-- [ ] Async tasks + WebSocket streaming
 - [ ] Multi-step pipelines (research → implement → verify across providers)
 - [ ] **Phase 2:** Rust core + Tauri desktop UI (attaches to the same daemon API)
 

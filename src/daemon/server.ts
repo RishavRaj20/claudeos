@@ -1,8 +1,10 @@
 import { createServer } from "node:http";
+import { WebSocketServer } from "ws";
 import type { ClaudeOSConfig } from "../config.ts";
 import { buildProviders } from "../providers/index.ts";
 import { McpManager } from "../mcp/manager.ts";
 import { Scheduler } from "./scheduler.ts";
+import { TaskManager, type TaskEvent } from "./tasks.ts";
 
 // The ClaudeOS daemon: a local HTTP API any client (CLI today, Tauri UI in
 // phase 2) can attach to.
@@ -23,6 +25,7 @@ export async function startDaemon(config: ClaudeOSConfig): Promise<void> {
 
   const providers = buildProviders(config, mcp);
   const scheduler = new Scheduler(config, providers);
+  const taskManager = new TaskManager(scheduler);
   const startedAt = Date.now();
 
   const server = createServer(async (req, res) => {
@@ -64,6 +67,20 @@ export async function startDaemon(config: ClaudeOSConfig): Promise<void> {
         }
         const output = await mcp.callTool(body.tool, body.args ?? {});
         send(200, { ok: true, output });
+      } else if (req.method === "POST" && req.url === "/tasks") {
+        // Async: returns immediately with a taskId; follow via WS or GET /tasks/:id
+        const body = (await readBody()) as { prompt?: string; provider?: string };
+        if (!body.prompt) {
+          send(400, { error: "Missing 'prompt'" });
+          return;
+        }
+        send(202, taskManager.submit(body.prompt, body.provider));
+      } else if (req.method === "GET" && req.url?.startsWith("/tasks/")) {
+        const task = taskManager.get(req.url.slice("/tasks/".length));
+        if (!task) send(404, { error: "No such task" });
+        else send(200, task);
+      } else if (req.method === "GET" && req.url === "/tasks") {
+        send(200, taskManager.list());
       } else if (req.method === "GET" && req.url?.startsWith("/runs")) {
         send(200, scheduler.recentRuns());
       } else if (req.method === "POST" && req.url === "/run") {
@@ -79,6 +96,15 @@ export async function startDaemon(config: ClaudeOSConfig): Promise<void> {
       }
     } catch (err) {
       send(500, { error: err instanceof Error ? err.message : String(err) });
+    }
+  });
+
+  // WebSocket: GET /ws — pushes task lifecycle events to every client.
+  const wss = new WebSocketServer({ server, path: "/ws" });
+  taskManager.on("event", (event: TaskEvent) => {
+    const payload = JSON.stringify(event);
+    for (const client of wss.clients) {
+      if (client.readyState === 1) client.send(payload);
     }
   });
 

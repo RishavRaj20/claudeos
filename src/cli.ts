@@ -18,17 +18,20 @@ async function daemonAlive(): Promise<boolean> {
   }
 }
 
-function parseRunArgs(args: string[]): { prompt: string; provider?: string } {
+function parseRunArgs(args: string[]): { prompt: string; provider?: string; async: boolean } {
   let provider: string | undefined;
+  let async = false;
   const parts: string[] = [];
   for (let i = 0; i < args.length; i++) {
     if (args[i] === "--provider" || args[i] === "-p") {
       provider = args[++i];
+    } else if (args[i] === "--async" || args[i] === "-a") {
+      async = true;
     } else {
       parts.push(args[i]);
     }
   }
-  return { prompt: parts.join(" "), provider };
+  return { prompt: parts.join(" "), provider, async };
 }
 
 async function main(): Promise<void> {
@@ -60,10 +63,26 @@ async function main(): Promise<void> {
     }
 
     case "run": {
-      const { prompt, provider } = parseRunArgs(rest);
+      const { prompt, provider, async } = parseRunArgs(rest);
       if (!prompt) {
-        console.error('Usage: claudeos run "your task" [--provider name]');
+        console.error('Usage: claudeos run "your task" [--provider name] [--async]');
         process.exit(1);
+      }
+      if (async) {
+        if (!(await daemonAlive())) {
+          console.error("--async requires the daemon: start it with `claudeos start`");
+          process.exit(1);
+        }
+        const res = await fetch(`${BASE}/tasks`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ prompt, provider }),
+        });
+        const task = (await res.json()) as { taskId: string };
+        console.log(`task submitted: ${task.taskId}`);
+        console.log(`  follow:  claudeos task ${task.taskId}`);
+        console.log(`  stream:  claudeos watch`);
+        return;
       }
       let record;
       if (await daemonAlive()) {
@@ -91,6 +110,59 @@ async function main(): Promise<void> {
       break;
     }
 
+    case "task": {
+      const id = rest[0];
+      if (!id) {
+        // No id: list all async tasks
+        const res = await fetch(`${BASE}/tasks`);
+        const tasks = (await res.json()) as Array<{ taskId: string; status: string; prompt: string }>;
+        for (const t of tasks) console.log(`${t.taskId}  ${t.status.padEnd(8)} ${t.prompt.slice(0, 60)}`);
+        return;
+      }
+      const res = await fetch(`${BASE}/tasks/${id}`);
+      const task = (await res.json()) as {
+        status: string;
+        record?: { provider: string; model?: string; ok: boolean; output: string };
+        error?: string;
+      };
+      if (task.error) {
+        console.error(task.error);
+        process.exit(1);
+      }
+      console.log(`status: ${task.status}`);
+      if (task.record) {
+        console.log(`\n[${task.record.provider}${task.record.model ? ` / ${task.record.model}` : ""}] ${task.record.ok ? "✓" : "✗"}\n`);
+        console.log(task.record.output);
+      }
+      break;
+    }
+
+    case "watch": {
+      if (!(await daemonAlive())) {
+        console.error("watch requires the daemon: start it with `claudeos start`");
+        process.exit(1);
+      }
+      console.log(`watching ws://localhost:${config.port}/ws  (Ctrl+C to stop)\n`);
+      const ws = new WebSocket(`ws://localhost:${config.port}/ws`);
+      ws.addEventListener("message", (msg) => {
+        const event = JSON.parse(String(msg.data)) as {
+          type: string;
+          task: { taskId: string; status: string; prompt: string; record?: { provider: string; ok: boolean; output: string } };
+        };
+        const t = event.task;
+        if (event.type === "task.finished" && t.record) {
+          console.log(`${event.type}  [${t.record.provider}] ${t.record.ok ? "✓" : "✗"}  ${t.prompt.slice(0, 50)}`);
+          console.log(`  ${t.record.output.slice(0, 200).replace(/\n+/g, " ")}\n`);
+        } else {
+          console.log(`${event.type}  ${t.taskId.slice(0, 8)}  ${t.prompt.slice(0, 50)}`);
+        }
+      });
+      ws.addEventListener("close", () => process.exit(0));
+      // keep process alive
+      await new Promise(() => {});
+      break;
+    }
+
     case "recall": {
       const query = rest.join(" ");
       if (!query) {
@@ -113,7 +185,36 @@ async function main(): Promise<void> {
 
     case "mcp": {
       // "claudeos mcp"                      -> list servers + tools (daemon)
+      // "claudeos mcp registry"             -> browse installable drivers
+      // "claudeos mcp install <name>"       -> add a driver to config
+      // "claudeos mcp remove <name>"        -> remove a driver from config
       // "claudeos mcp call <tool> '<json>'" -> call a tool via the daemon
+      if (rest[0] === "registry") {
+        const { REGISTRY } = await import("./mcp/registry.ts");
+        for (const [name, e] of Object.entries(REGISTRY)) {
+          console.log(`${name.padEnd(22)} ${e.description}`);
+        }
+        console.log(`\nInstall with: claudeos mcp install <name>`);
+        return;
+      }
+      if (rest[0] === "install" || rest[0] === "remove") {
+        const { installServer, removeServer } = await import("./mcp/registry.ts");
+        const name = rest[1];
+        if (!name) {
+          console.error(`Usage: claudeos mcp ${rest[0]} <name>   (see: claudeos mcp registry)`);
+          process.exit(1);
+        }
+        if (rest[0] === "install") {
+          const entry = installServer(name);
+          console.log(`✓ installed driver "${name}" — ${entry.description}`);
+          if (entry.note) console.log(`  note: ${entry.note}`);
+        } else {
+          removeServer(name);
+          console.log(`✓ removed driver "${name}"`);
+        }
+        console.log(`  restart the daemon to apply`);
+        return;
+      }
       if (!(await daemonAlive())) {
         console.error("MCP requires the daemon: start it with `claudeos start`");
         process.exit(1);
@@ -162,10 +263,15 @@ Usage:
   claudeos status                         Daemon status + provider health
   claudeos providers                      List providers and availability
   claudeos run "task" [--provider name]   Route a task (auto or explicit)
+  claudeos run "task" --async             Submit and return immediately
+  claudeos task [id]                      Async task status / list
+  claudeos watch                          Live-stream task events (WebSocket)
   claudeos runs                           Recent task history
   claudeos memory                         List shared memory vault entries
   claudeos recall "query"                 Preview memories injected for a task
   claudeos mcp                            List MCP servers and tools
+  claudeos mcp registry                   Browse installable drivers
+  claudeos mcp install|remove <name>      Add/remove a driver in config
   claudeos mcp call <tool> '<json>'       Call an MCP tool directly
 `);
   }
