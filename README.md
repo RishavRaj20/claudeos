@@ -82,7 +82,7 @@ node src/cli.ts mcp                                     # list drivers + tools
   ```bash
   claudeos mcp call filesystem__read_text_file '{"path": "README.md"}'
   ```
-- **🧠 Memory injection** — every task automatically receives the most relevant past runs (keyword + recency scoring) inside a `<claudeos-memory>` block, whoever produced them
+- **🧠 Semantic memory injection** — every task automatically receives the most relevant past runs inside a `<claudeos-memory>` block, whoever produced them. Ranking is by embedding similarity (local `nomic-embed-text` via Ollama — fully private, no API), with keyword+recency fallback when Ollama is off. Past runs are auto-embedded at daemon startup.
 - **📓 Human-readable memory** — every run is a markdown file with frontmatter; point Obsidian at `~/.claudeos/memory/` and browse your agents' entire history
 - **📥 Driver registry** — `claudeos mcp registry` lists 9 curated drivers (fetch, github, puppeteer, sqlite, ...); `claudeos mcp install <name>` writes the config for you
 - **⏱ Async tasks + live events** — `claudeos run "..." --async` returns instantly; follow with `claudeos task <id>` or stream every task's lifecycle over WebSocket with `claudeos watch`
@@ -144,7 +144,7 @@ Everything lives in `claudeos.config.json` (gitignored — copy [claudeos.config
 - [x] Memory injection — cross-agent knowledge sharing on every task
 - [x] `claudeos mcp install <name>` — one-command driver registry (9 curated MCP servers)
 - [x] Async tasks + WebSocket streaming — `run --async`, `claudeos task`, `claudeos watch`
-- [ ] Embedding-based recall (via Ollama `nomic-embed-text`)
+- [x] Embedding-based recall — semantic memory search via local Ollama embeddings (`nomic-embed-text`), with keyword fallback when Ollama is offline
 - [ ] Multi-step pipelines (research → implement → verify across providers)
 - [ ] **Phase 2:** Rust core + Tauri desktop UI (attaches to the same daemon API)
 

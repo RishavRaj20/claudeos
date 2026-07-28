@@ -26,6 +26,11 @@ export class RunStore {
         finished_at TEXT NOT NULL
       );
     `);
+    // Migration: embedding column for semantic recall (Float32Array as BLOB)
+    const cols = this.db.prepare(`PRAGMA table_info(runs)`).all() as Array<{ name: string }>;
+    if (!cols.some((c) => c.name === "embedding")) {
+      this.db.exec(`ALTER TABLE runs ADD COLUMN embedding BLOB`);
+    }
   }
 
   insert(r: TaskRecord): void {
@@ -84,6 +89,47 @@ export class RunStore {
       .filter((r) => r.score >= 2)
       .sort((a, b) => b.score - a.score)
       .slice(0, limit);
+  }
+
+  setEmbedding(id: string, vec: Float32Array): void {
+    this.db
+      .prepare(`UPDATE runs SET embedding = ? WHERE id = ?`)
+      .run(Buffer.from(vec.buffer, vec.byteOffset, vec.byteLength), id);
+  }
+
+  /** Successful runs that still need an embedding (for startup backfill). */
+  missingEmbeddings(limit = 100): TaskRecord[] {
+    const rows = this.db
+      .prepare(`SELECT * FROM runs WHERE ok = 1 AND embedding IS NULL ORDER BY started_at DESC LIMIT ?`)
+      .all(limit) as Record<string, unknown>[];
+    return rows.map((row) => this.toRecord(row));
+  }
+
+  /** Successful runs with embeddings, for semantic recall. */
+  embedded(limit = 500): Array<TaskRecord & { vector: Float32Array }> {
+    const rows = this.db
+      .prepare(`SELECT * FROM runs WHERE ok = 1 AND embedding IS NOT NULL ORDER BY started_at DESC LIMIT ?`)
+      .all(limit) as Record<string, unknown>[];
+    return rows.map((row) => {
+      const buf = row.embedding as Uint8Array;
+      return {
+        ...this.toRecord(row),
+        vector: new Float32Array(buf.buffer, buf.byteOffset, buf.byteLength / 4),
+      };
+    });
+  }
+
+  private toRecord(row: Record<string, unknown>): TaskRecord {
+    return {
+      id: String(row.id),
+      prompt: String(row.prompt),
+      provider: String(row.provider),
+      model: row.model ? String(row.model) : undefined,
+      output: String(row.output),
+      ok: Boolean(row.ok),
+      startedAt: String(row.started_at),
+      finishedAt: String(row.finished_at),
+    };
   }
 
   count(): number {

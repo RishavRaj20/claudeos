@@ -27,6 +27,10 @@ export interface MemoryConfig {
   inject: boolean;
   maxEntries?: number;
   maxCharsPerEntry?: number;
+  embeddings?: {
+    baseUrl?: string; // default http://localhost:11434
+    model?: string; // default nomic-embed-text
+  };
 }
 
 export interface ClaudeOSConfig {

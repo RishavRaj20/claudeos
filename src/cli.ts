@@ -170,13 +170,13 @@ async function main(): Promise<void> {
         process.exit(1);
       }
       const scheduler = new Scheduler(config, new Map());
-      const entries = scheduler.recall(query);
+      const entries = await scheduler.recall(query);
       if (entries.length === 0) {
         console.log("(no relevant memories)");
         return;
       }
       for (const e of entries) {
-        console.log(`score ${e.score.toFixed(1)}  [${e.provider}] ${e.startedAt.slice(0, 16)}`);
+        console.log(`${e.method} ${e.score.toFixed(2)}  [${e.provider}] ${e.startedAt.slice(0, 16)}`);
         console.log(`  task:   ${e.prompt.slice(0, 100)}`);
         console.log(`  result: ${e.output.slice(0, 160).replace(/\n+/g, " ")}\n`);
       }

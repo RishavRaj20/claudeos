@@ -28,6 +28,12 @@ export async function startDaemon(config: ClaudeOSConfig): Promise<void> {
   const taskManager = new TaskManager(scheduler);
   const startedAt = Date.now();
 
+  // Backfill embeddings for past runs (best-effort, non-blocking).
+  void scheduler
+    .backfillEmbeddings()
+    .then((n) => n > 0 && console.log(`   embedded ${n} past run(s) for semantic recall`))
+    .catch(() => {});
+
   const server = createServer(async (req, res) => {
     const send = (code: number, body: unknown) => {
       res.writeHead(code, { "content-type": "application/json" });
