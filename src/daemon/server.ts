@@ -1,6 +1,9 @@
 import { createServer } from "node:http";
+import { readFileSync, writeFileSync } from "node:fs";
+import { join, basename } from "node:path";
 import { WebSocketServer } from "ws";
-import type { ClaudeOSConfig } from "../config.ts";
+import { PROJECT_ROOT, type ClaudeOSConfig } from "../config.ts";
+import { Vault } from "../memory/vault.ts";
 import { buildProviders } from "../providers/index.ts";
 import { McpManager } from "../mcp/manager.ts";
 import { Scheduler } from "./scheduler.ts";
@@ -98,6 +101,31 @@ export async function startDaemon(config: ClaudeOSConfig): Promise<void> {
         else send(200, task);
       } else if (req.method === "GET" && req.url === "/tasks") {
         send(200, taskManager.list());
+      } else if (req.method === "GET" && req.url === "/memory") {
+        send(200, new Vault().list(100));
+      } else if (req.method === "GET" && req.url?.startsWith("/memory/")) {
+        // basename() prevents path traversal out of the vault dir
+        const file = basename(decodeURIComponent(req.url.slice("/memory/".length)));
+        try {
+          send(200, { name: file, content: new Vault().read(file) });
+        } catch {
+          send(404, { error: "No such memory entry" });
+        }
+      } else if (req.method === "GET" && req.url === "/config") {
+        send(200, config);
+      } else if (req.method === "PUT" && req.url === "/config") {
+        const body = await readBody();
+        for (const field of ["port", "defaultProvider", "providers"]) {
+          if (!(field in body)) {
+            send(400, { error: `Config must include "${field}"` });
+            return;
+          }
+        }
+        writeFileSync(
+          join(PROJECT_ROOT, "claudeos.config.json"),
+          JSON.stringify(body, null, 2) + "\n",
+        );
+        send(200, { ok: true, note: "Saved. Restart the daemon to apply." });
       } else if (req.method === "GET" && req.url === "/pipelines") {
         send(200, Object.fromEntries(
           Object.entries(config.pipelines ?? {}).map(([n, steps]) => [

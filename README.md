@@ -164,7 +164,8 @@ Everything lives in `claudeos.config.json` (gitignored — copy [claudeos.config
 - [x] Embedding-based recall — semantic memory search via local Ollama embeddings (`nomic-embed-text`), with keyword fallback when Ollama is offline
 - [x] Multi-step pipelines — research → implement → verify chains across providers, defined in config, streamed step-by-step over WebSocket
 - [x] **Phase 2 (started):** Tauri desktop app (`desktop/`) — native dashboard over the daemon's HTTP/WS API: provider + MCP health, run console with auto-route/provider/pipeline selection, live event feed, run history
-- [ ] Phase 2 continued: streaming output in the UI, memory browser, config editor, packaged builds
+- [x] Phase 2 continued: live async runs in the UI (WebSocket-fed output), memory vault browser, in-app config editor, packaged `.app`/`.dmg` builds (`npm run tauri build`)
+- [ ] Phase 2 next: per-token streaming, driver install from the UI, notifications
 
 ## 🤝 Contributing
 

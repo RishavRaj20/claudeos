@@ -19,12 +19,81 @@ const runsEl = $("runs");
 const feedEl = $("feed");
 
 let online = false;
+let pendingTaskId: string | null = null;
 
 function esc(s: string): string {
   const div = document.createElement("div");
   div.textContent = s;
   return div.innerHTML;
 }
+
+// ---------- tabs ----------
+
+document.querySelectorAll<HTMLButtonElement>(".tab").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".tab").forEach((b) => b.classList.remove("active"));
+    btn.classList.add("active");
+    document.querySelectorAll(".tab-page").forEach((p) => p.classList.add("hidden"));
+    document.getElementById(`tab-${btn.dataset.tab}`)!.classList.remove("hidden");
+    if (btn.dataset.tab === "memory") void loadMemoryList();
+    if (btn.dataset.tab === "config") void loadConfig();
+  });
+});
+
+// ---------- memory browser ----------
+
+async function loadMemoryList(): Promise<void> {
+  const listEl = $("memory-list");
+  const res = await fetch(`${BASE}/memory`);
+  const files = (await res.json()) as string[];
+  listEl.innerHTML = "";
+  for (const f of files) {
+    const li = document.createElement("li");
+    li.className = "clickable";
+    li.textContent = f.replace(/\.md$/, "");
+    li.addEventListener("click", async () => {
+      listEl.querySelectorAll("li").forEach((x) => x.classList.remove("selected"));
+      li.classList.add("selected");
+      const r = await fetch(`${BASE}/memory/${encodeURIComponent(f)}`);
+      const entry = (await r.json()) as { name: string; content: string };
+      $("memory-title").textContent = entry.name;
+      $("memory-content").textContent = entry.content;
+    });
+    listEl.appendChild(li);
+  }
+  if (files.length === 0) listEl.innerHTML = `<li class="dim">vault is empty</li>`;
+}
+
+// ---------- config editor ----------
+
+const configEditor = $<HTMLTextAreaElement>("config-editor");
+const configMsg = $("config-msg");
+
+async function loadConfig(): Promise<void> {
+  const res = await fetch(`${BASE}/config`);
+  configEditor.value = JSON.stringify(await res.json(), null, 2);
+  configMsg.textContent = "";
+  configMsg.className = "dim";
+}
+
+$<HTMLButtonElement>("config-save").addEventListener("click", async () => {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(configEditor.value);
+  } catch (err) {
+    configMsg.textContent = `invalid JSON: ${err instanceof Error ? err.message : err}`;
+    configMsg.className = "err-mark";
+    return;
+  }
+  const res = await fetch(`${BASE}/config`, {
+    method: "PUT",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(parsed),
+  });
+  const result = (await res.json()) as { ok?: boolean; note?: string; error?: string };
+  configMsg.textContent = result.ok ? `✓ ${result.note}` : result.error ?? "save failed";
+  configMsg.className = result.ok ? "ok-mark" : "err-mark";
+});
 
 // ---------- status / sidebar ----------
 
@@ -116,22 +185,37 @@ async function run(): Promise<void> {
             `<div class="step-head">── ${esc(s.step)} [${esc(s.record.provider)}] ${s.record.ok ? "✓" : "✗"}</div>${esc(s.record.output)}\n`,
         )
         .join("\n");
+      runBtn.disabled = false;
     } else {
-      const res = await fetch(`${BASE}/run`, {
+      // Async submit — WS task.finished event fills the output live.
+      const res = await fetch(`${BASE}/tasks`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ prompt, provider: providerSelect.value || undefined }),
       });
-      const record = (await res.json()) as { error?: string; provider?: string; model?: string; ok?: boolean; output?: string };
-      if (record.error) throw new Error(record.error);
-      outputEl.innerHTML = `<div class="step-head">[${esc(record.provider ?? "")}${record.model ? ` / ${esc(record.model)}` : ""}] ${record.ok ? "✓" : "✗"}</div>${esc(record.output ?? "")}`;
+      const task = (await res.json()) as { taskId?: string; error?: string };
+      if (task.error || !task.taskId) throw new Error(task.error ?? "submit failed");
+      pendingTaskId = task.taskId;
+      outputEl.innerHTML = `<span class="spinner">⏳ running task ${esc(task.taskId.slice(0, 8))}…</span>`;
     }
   } catch (err) {
     outputEl.innerHTML = `<span class="err-mark">${esc(err instanceof Error ? err.message : String(err))}</span>`;
-  } finally {
     runBtn.disabled = false;
+  } finally {
     void refreshRuns();
   }
+}
+
+function onTaskFinished(task: {
+  taskId: string;
+  record?: { provider: string; model?: string; ok: boolean; output: string };
+}): void {
+  if (task.taskId !== pendingTaskId || !task.record) return;
+  pendingTaskId = null;
+  runBtn.disabled = false;
+  const r = task.record;
+  outputEl.innerHTML = `<div class="step-head">[${esc(r.provider)}${r.model ? ` / ${esc(r.model)}` : ""}] ${r.ok ? "✓" : "✗"}</div>${esc(r.output)}`;
+  void refreshRuns();
 }
 
 runBtn.addEventListener("click", () => void run());
@@ -158,6 +242,7 @@ function connectWs(): void {
       if (e.task) {
         const ok = e.task.record ? (e.task.record.ok ? "ok" : "err") : "";
         feedLine(`<b>${esc(e.type)}</b> ${esc(e.task.prompt?.slice(0, 48) ?? "")}`, ok);
+        if (e.type === "task.finished") onTaskFinished(e.task);
       } else if (e.type?.startsWith("pipeline.")) {
         const ok = e.ok === undefined ? "" : e.ok ? "ok" : "err";
         feedLine(`<b>${esc(e.type)}</b> ${esc(e.name ?? "")}${e.step ? ` · ${esc(e.step)}` : ""}${e.provider ? ` [${esc(e.provider)}]` : ""}`, ok);

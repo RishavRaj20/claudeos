@@ -10,10 +10,15 @@
   <body>
     <header>
       <div class="brand">⚡ <b>ClaudeOS</b><span class="sub">agent operating system</span></div>
+      <nav class="tabs">
+        <button class="tab active" data-tab="dashboard">Dashboard</button>
+        <button class="tab" data-tab="memory">Memory</button>
+        <button class="tab" data-tab="config">Config</button>
+      </nav>
       <div id="daemon-status" class="pill offline">daemon: connecting…</div>
     </header>
 
-    <main>
+    <main id="tab-dashboard" class="tab-page">
       <aside>
         <section>
           <h2>Providers</h2>
@@ -54,6 +59,34 @@
           <ul id="feed" class="feed"></ul>
         </section>
       </aside>
+    </main>
+
+    <main id="tab-memory" class="tab-page hidden two-col">
+      <aside>
+        <section class="feed-section">
+          <h2>Shared Memory Vault</h2>
+          <ul id="memory-list" class="list scroll"></ul>
+        </section>
+      </aside>
+      <div class="center">
+        <section class="output fill">
+          <h2 id="memory-title">Select an entry</h2>
+          <div id="memory-content" class="fill-scroll"><span class="dim">Every task any agent runs is recorded here, in Obsidian-compatible markdown.</span></div>
+        </section>
+      </div>
+    </main>
+
+    <main id="tab-config" class="tab-page hidden one-col">
+      <div class="center">
+        <section class="output fill">
+          <h2>claudeos.config.json <span class="dim">— providers, routing, memory, MCP drivers, pipelines</span></h2>
+          <textarea id="config-editor" spellcheck="false"></textarea>
+          <div class="controls">
+            <span id="config-msg" class="dim"></span>
+            <button id="config-save">Save</button>
+          </div>
+        </section>
+      </div>
     </main>
   </body>
 </html>
