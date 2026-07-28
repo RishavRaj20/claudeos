@@ -1,0 +1,21 @@
+{
+  "name": "claudeos",
+  "version": "0.1.0",
+  "description": "ClaudeOS — an open-source agent OS: Claude as the kernel, every AI tool as a process",
+  "type": "module",
+  "bin": {
+    "claudeos": "./bin/claudeos.ts"
+  },
+  "scripts": {
+    "start": "node src/cli.ts start",
+    "cli": "node src/cli.ts"
+  },
+  "engines": {
+    "node": ">=23.6.0"
+  },
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.70.0",
+    "@modelcontextprotocol/sdk": "^1.30.0"
+  }
+}
