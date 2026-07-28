@@ -108,13 +108,21 @@ export class Scheduler {
     ].join("\n");
   }
 
-  async run(prompt: string, explicitProvider?: string): Promise<TaskRecord> {
+  async run(
+    prompt: string,
+    explicitProvider?: string,
+    onDelta?: (text: string) => void,
+  ): Promise<TaskRecord> {
     const provider = this.pickProvider(prompt, explicitProvider);
     const startedAt = new Date().toISOString();
     const id = randomUUID();
     let record: TaskRecord;
     try {
-      const result = await provider.run(await this.buildPromptWithMemory(prompt));
+      const fullPrompt = await this.buildPromptWithMemory(prompt);
+      const result =
+        onDelta && provider.runStream
+          ? await provider.runStream(fullPrompt, onDelta)
+          : await provider.run(fullPrompt);
       record = {
         id,
         prompt,

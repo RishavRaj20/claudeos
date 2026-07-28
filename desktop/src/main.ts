@@ -196,6 +196,7 @@ async function run(): Promise<void> {
       const task = (await res.json()) as { taskId?: string; error?: string };
       if (task.error || !task.taskId) throw new Error(task.error ?? "submit failed");
       pendingTaskId = task.taskId;
+      streamedChars = 0;
       outputEl.innerHTML = `<span class="spinner">⏳ running task ${esc(task.taskId.slice(0, 8))}…</span>`;
     }
   } catch (err) {
@@ -206,12 +207,27 @@ async function run(): Promise<void> {
   }
 }
 
+let streamedChars = 0;
+
+function onTaskDelta(taskId: string, text: string): void {
+  if (taskId !== pendingTaskId) return;
+  if (streamedChars === 0) {
+    // First token: replace the spinner with a live stream container.
+    outputEl.innerHTML = `<div class="step-head">streaming…</div><span id="stream-text"></span><span class="spinner">▌</span>`;
+  }
+  streamedChars += text.length;
+  const streamText = document.getElementById("stream-text");
+  if (streamText) streamText.textContent += text;
+  outputEl.scrollTop = outputEl.scrollHeight;
+}
+
 function onTaskFinished(task: {
   taskId: string;
   record?: { provider: string; model?: string; ok: boolean; output: string };
 }): void {
   if (task.taskId !== pendingTaskId || !task.record) return;
   pendingTaskId = null;
+  streamedChars = 0;
   runBtn.disabled = false;
   const r = task.record;
   outputEl.innerHTML = `<div class="step-head">[${esc(r.provider)}${r.model ? ` / ${esc(r.model)}` : ""}] ${r.ok ? "✓" : "✗"}</div>${esc(r.output)}`;
@@ -239,6 +255,10 @@ function connectWs(): void {
   ws.addEventListener("message", (msg) => {
     try {
       const e = JSON.parse(String(msg.data));
+      if (e.type === "task.delta") {
+        onTaskDelta(e.taskId, e.text);
+        return; // token stream — not shown in the event feed
+      }
       if (e.task) {
         const ok = e.task.record ? (e.task.record.ok ? "ok" : "err") : "";
         feedLine(`<b>${esc(e.type)}</b> ${esc(e.task.prompt?.slice(0, 48) ?? "")}`, ok);

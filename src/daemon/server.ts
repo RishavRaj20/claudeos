@@ -7,7 +7,7 @@ import { Vault } from "../memory/vault.ts";
 import { buildProviders } from "../providers/index.ts";
 import { McpManager } from "../mcp/manager.ts";
 import { Scheduler } from "./scheduler.ts";
-import { TaskManager, type TaskEvent } from "./tasks.ts";
+import { TaskManager, type TaskEvent, type TaskDeltaEvent } from "./tasks.ts";
 import { runPipeline } from "./pipeline.ts";
 
 // The ClaudeOS daemon: a local HTTP API any client (CLI today, Tauri UI in
@@ -167,7 +167,7 @@ export async function startDaemon(config: ClaudeOSConfig): Promise<void> {
       if (client.readyState === 1) client.send(payload);
     }
   };
-  taskManager.on("event", (event: TaskEvent) => broadcast(event));
+  taskManager.on("event", (event: TaskEvent | TaskDeltaEvent) => broadcast(event));
 
   server.listen(config.port, () => {
     const toolCount = mcp.listTools().length;

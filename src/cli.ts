@@ -203,6 +203,7 @@ async function main(): Promise<void> {
           provider?: string;
           ok?: boolean;
         };
+        if (event.type === "task.delta") return; // token stream — too noisy for watch
         if (event.task) {
           const t = event.task;
           if (event.type === "task.finished" && t.record) {

@@ -29,6 +29,10 @@ export class CliAgentProvider implements Provider {
   }
 
   async run(prompt: string): Promise<RunOutput> {
+    return this.runStream(prompt, () => {});
+  }
+
+  async runStream(prompt: string, onDelta: (text: string) => void): Promise<RunOutput> {
     const args = this.argsTemplate.map((a) => a.replaceAll("{prompt}", prompt));
     return new Promise((resolve, reject) => {
       const child = spawn(this.command, args, {
@@ -42,7 +46,10 @@ export class CliAgentProvider implements Provider {
         reject(new Error(`${this.name} timed out after ${this.timeoutMs}ms`));
       }, this.timeoutMs);
 
-      child.stdout.on("data", (d) => (stdout += d));
+      child.stdout.on("data", (d) => {
+        stdout += d;
+        onDelta(String(d));
+      });
       child.stderr.on("data", (d) => (stderr += d));
       child.on("error", (err) => {
         clearTimeout(timer);

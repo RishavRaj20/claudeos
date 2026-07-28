@@ -165,7 +165,8 @@ Everything lives in `claudeos.config.json` (gitignored — copy [claudeos.config
 - [x] Multi-step pipelines — research → implement → verify chains across providers, defined in config, streamed step-by-step over WebSocket
 - [x] **Phase 2 (started):** Tauri desktop app (`desktop/`) — native dashboard over the daemon's HTTP/WS API: provider + MCP health, run console with auto-route/provider/pipeline selection, live event feed, run history
 - [x] Phase 2 continued: live async runs in the UI (WebSocket-fed output), memory vault browser, in-app config editor, packaged `.app`/`.dmg` builds (`npm run tauri build`)
-- [ ] Phase 2 next: per-token streaming, driver install from the UI, notifications
+- [x] Per-token streaming — all three provider types stream deltas over WebSocket (`task.delta`); the desktop app renders output live with a cursor
+- [ ] Phase 2 next: driver install from the UI, notifications, signed builds
 
 ## 🤝 Contributing
 

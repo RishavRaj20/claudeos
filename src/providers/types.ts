@@ -16,6 +16,11 @@ export interface Provider {
   available(): Promise<boolean>;
   /** Execute one prompt and return the final text output. */
   run(prompt: string): Promise<RunOutput>;
+  /**
+   * Optional: execute with live output. onDelta receives text chunks as the
+   * backend produces them; the resolved RunOutput is still the full result.
+   */
+  runStream?(prompt: string, onDelta: (text: string) => void): Promise<RunOutput>;
 }
 
 export interface TaskRecord {

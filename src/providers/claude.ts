@@ -27,6 +27,10 @@ export class ClaudeProvider implements Provider {
   }
 
   async run(prompt: string): Promise<RunOutput> {
+    return this.runStream(prompt, () => {});
+  }
+
+  async runStream(prompt: string, onDelta: (text: string) => void): Promise<RunOutput> {
     const tools = this.mcp?.toAnthropicTools() ?? [];
     const messages: Anthropic.Beta.BetaMessageParam[] = [
       { role: "user", content: prompt },
@@ -45,6 +49,7 @@ export class ClaudeProvider implements Provider {
         messages,
       } as Parameters<typeof this.client.beta.messages.stream>[0]);
 
+      stream.on("text", (delta: string) => onDelta(delta));
       const message = await stream.finalMessage();
       totalIn += message.usage.input_tokens;
       totalOut += message.usage.output_tokens;

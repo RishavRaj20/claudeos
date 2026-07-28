@@ -23,6 +23,12 @@ export interface TaskEvent {
   task: AsyncTask;
 }
 
+export interface TaskDeltaEvent {
+  type: "task.delta";
+  taskId: string;
+  text: string;
+}
+
 export class TaskManager extends EventEmitter {
   private tasks = new Map<string, AsyncTask>();
   private scheduler: Scheduler;
@@ -47,7 +53,9 @@ export class TaskManager extends EventEmitter {
     queueMicrotask(async () => {
       task.status = "running";
       this.emit("event", { type: "task.started", task } satisfies TaskEvent);
-      const record = await this.scheduler.run(prompt, provider);
+      const record = await this.scheduler.run(prompt, provider, (text) => {
+        this.emit("event", { type: "task.delta", taskId: task.taskId, text } satisfies TaskDeltaEvent);
+      });
       task.record = record;
       task.status = record.ok ? "done" : "failed";
       this.emit("event", { type: "task.finished", task } satisfies TaskEvent);
