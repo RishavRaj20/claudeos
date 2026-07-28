@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ClaudeOS — the open-source agent operating system</title>
+<meta name="description" content="Claude is the kernel. Every AI tool is a process. All agents share one memory. Open-source agent OS with MCP drivers, semantic memory, and cross-provider pipelines.">
+<meta property="og:title" content="ClaudeOS — the open-source agent operating system">
+<meta property="og:description" content="Claude is the kernel. Every AI tool is a process. All agents share one memory.">
+<style>
+:root{--bg:#0d1117;--panel:#161b22;--border:#21262d;--text:#e6edf3;--dim:#8b949e;--accent:#d97a34;--green:#3fb950;--mono:"SF Mono",Menlo,Consolas,monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font:16px/1.6 -apple-system,"Segoe UI",sans-serif}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+.wrap{max-width:960px;margin:0 auto;padding:0 24px}
+nav{display:flex;align-items:center;justify-content:space-between;padding:18px 0}
+nav .logo{font-weight:800;font-size:18px}
+nav .links a{margin-left:20px;color:var(--dim);font-size:14px}
+nav .links a:hover{color:var(--text)}
+.hero{text-align:center;padding:72px 0 48px}
+.hero h1{font-size:52px;line-height:1.15;letter-spacing:-.02em}
+.hero h1 .zap{color:var(--accent)}
+.hero p.tag{font-size:21px;color:var(--dim);margin:18px auto 0;max-width:640px}
+.hero p.tag b{color:var(--text)}
+.cta{margin-top:32px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.btn{display:inline-block;padding:11px 24px;border-radius:8px;font-weight:600;font-size:15px}
+.btn.primary{background:var(--accent);color:#fff}
+.btn.primary:hover{filter:brightness(1.1);text-decoration:none}
+.btn.ghost{border:1px solid var(--border);color:var(--text)}
+.btn.ghost:hover{border-color:var(--dim);text-decoration:none}
+.chips{margin-top:26px;color:var(--dim);font-family:var(--mono);font-size:13px}
+.chips span{margin:0 8px}
+.demo{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:22px;margin:48px auto 0;max-width:760px;text-align:left;font-family:var(--mono);font-size:13.5px;line-height:1.7;overflow-x:auto;white-space:pre}
+.demo .c{color:var(--dim)}
+.demo .g{color:var(--green)}
+.demo .o{color:var(--accent)}
+section{padding:56px 0}
+h2{font-size:28px;margin-bottom:8px}
+.sub{color:var(--dim);margin-bottom:32px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:20px}
+.card h3{font-size:16px;margin-bottom:6px}
+.card p{color:var(--dim);font-size:14px}
+.card .emoji{font-size:22px;display:block;margin-bottom:10px}
+table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+th,td{text-align:left;padding:12px 16px;border-bottom:1px solid var(--border);font-size:14.5px}
+th{color:var(--dim);font-size:12px;text-transform:uppercase;letter-spacing:.06em}
+td:first-child{white-space:nowrap;font-weight:600}
+td:last-child{color:var(--dim)}
+tr:last-child td{border-bottom:none}
+pre.install{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:20px;font-family:var(--mono);font-size:13.5px;overflow-x:auto;line-height:1.8}
+pre.install .c{color:var(--dim)}
+footer{border-top:1px solid var(--border);padding:32px 0;color:var(--dim);font-size:14px;text-align:center}
+@media(max-width:640px){.hero h1{font-size:36px}.hero p.tag{font-size:17px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <div class="logo">⚡ ClaudeOS</div>
+    <div class="links">
+      <a href="#features">Features</a>
+      <a href="#install">Install</a>
+      <a href="https://github.com/RishavRaj20/claudeos/releases">Download</a>
+      <a href="https://github.com/RishavRaj20/claudeos">GitHub</a>
+    </div>
+  </nav>
+
+  <div class="hero">
+    <h1><span class="zap">⚡</span> The open-source<br>agent operating system</h1>
+    <p class="tag"><b>Claude is the kernel. Every AI tool is a process. All agents share one memory.</b><br>
+    One daemon routes your tasks across Claude, local Ollama models, and the CLI agents you already use — with plug-in MCP drivers and semantic memory that crosses agent boundaries.</p>
+    <div class="cta">
+      <a class="btn primary" href="https://github.com/RishavRaj20/claudeos">Star on GitHub ★</a>
+      <a class="btn ghost" href="https://github.com/RishavRaj20/claudeos/releases/latest">Download for macOS</a>
+    </div>
+    <div class="chips">one daemon<span>·</span>many agents<span>·</span>shared memory<span>·</span>MCP drivers</div>
+
+    <div class="demo">
+<span class="c"># Claude Code writes some code…</span>
+$ claudeos run "write a one-line python script to reverse a string"
+<span class="o">[claude-code]</span> <span class="g">✓</span>  print(input()[::-1])
+
+<span class="c"># …and a fully local model remembers it. Different backend, same memory.</span>
+$ claudeos run "what script did the coding agent write earlier?" --provider ollama
+<span class="o">[ollama / llama3.2]</span> <span class="g">✓</span>  print(input()[::-1])
+</div>
+  </div>
+
+  <section id="features">
+    <h2>An OS, not another chatbot</h2>
+    <p class="sub">ClaudeOS treats your AI tools the way an operating system treats processes.</p>
+    <div class="grid">
+      <div class="card"><span class="emoji">🧬</span><h3>Kernel &amp; scheduler</h3><p>A daemon routes every task to the right backend via configurable rules — coding to Claude Code, quick summaries to a local model, deep reasoning to the Claude API.</p></div>
+      <div class="card"><span class="emoji">⚙️</span><h3>Agents as processes</h3><p>Claude Code, Gemini CLI, Codex, and any Ollama model wrapped as first-class providers. Nothing reimplemented — orchestrate the tools you already use.</p></div>
+      <div class="card"><span class="emoji">🔌</span><h3>MCP drivers</h3><p>Capabilities plug in as MCP servers. <code>claudeos mcp install fetch</code> and the kernel model can browse the web; filesystem, GitHub, Puppeteer and more in the registry.</p></div>
+      <div class="card"><span class="emoji">🧠</span><h3>Shared semantic memory</h3><p>Every run is embedded locally and injected into future tasks — whichever agent produced it. SQLite + Obsidian-compatible markdown, fully private.</p></div>
+      <div class="card"><span class="emoji">🔗</span><h3>Cross-provider pipelines</h3><p>research → implement → verify chains where each step runs on a different backend, streamed step-by-step over WebSocket.</p></div>
+      <div class="card"><span class="emoji">🖥</span><h3>Native desktop app</h3><p>A 2.8 MB Tauri dashboard: run console, live event feed, memory browser, config editor. The CLI and the app are both thin clients over one local API.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>The OS analogy, taken seriously</h2>
+    <p class="sub">&nbsp;</p>
+    <table>
+      <tr><th>OS concept</th><th>ClaudeOS</th></tr>
+      <tr><td>Kernel / scheduler</td><td>Daemon that routes tasks to backends via config rules</td></tr>
+      <tr><td>Processes</td><td>Existing CLI agents wrapped as providers</td></tr>
+      <tr><td>Drivers</td><td>MCP servers, installed from a curated registry</td></tr>
+      <tr><td>Shared memory</td><td>SQLite index + markdown vault every agent reads &amp; writes</td></tr>
+      <tr><td>System calls</td><td>Local HTTP + WebSocket API any client can attach to</td></tr>
+    </table>
+  </section>
+
+  <section id="install">
+    <h2>Install</h2>
+    <p class="sub">Node ≥ 23.6 runs the TypeScript natively — no build step.</p>
+<pre class="install"><span class="c"># the daemon</span>
+git clone https://github.com/RishavRaj20/claudeos && cd claudeos
+npm install
+cp claudeos.config.example.json claudeos.config.json
+node src/cli.ts start
+
+<span class="c"># then, in another terminal</span>
+node src/cli.ts run "explain CRDTs in 3 lines"
+node src/cli.ts pipeline build "a python function is_palindrome(s)"</pre>
+    <p style="margin-top:16px;color:var(--dim);font-size:14.5px">Optional: <a href="https://ollama.com">Ollama</a> for local models &amp; semantic memory · <code>ANTHROPIC_API_KEY</code> for the direct API · the <a href="https://github.com/RishavRaj20/claudeos/releases/latest">desktop app</a> for a native dashboard.</p>
+  </section>
+
+  <footer>
+    Apache-2.0 · <a href="https://github.com/RishavRaj20/claudeos">github.com/RishavRaj20/claudeos</a> · inspired by <a href="https://github.com/tinyhumansai/openhuman">OpenHuman</a>
+  </footer>
+</div>
+</body>
+</html>
