@@ -1,6 +1,6 @@
 {
   "port": 7777,
-  "defaultProvider": "claude-code",
+  "defaultProvider": "claude",
   "providers": {
     "claude": {
       "type": "claude",
@@ -38,7 +38,7 @@
   "mcpServers": {
     "filesystem": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/Users/rishav/Desktop/OS"]
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/allowed/directory"]
     }
   },
   "routing": [

@@ -23,6 +23,7 @@ Projects like [OpenHuman](https://github.com/tinyhumansai/openhuman) build a sin
 
 ```bash
 npm install
+cp claudeos.config.example.json claudeos.config.json   # then edit to taste
 node src/cli.ts start           # start the daemon on :7777
 ```
 
@@ -39,7 +40,7 @@ node src/cli.ts memory                          # shared memory vault
 
 ## Configuration
 
-Everything lives in [claudeos.config.json](claudeos.config.json):
+Everything lives in `claudeos.config.json` (gitignored — copy [claudeos.config.example.json](claudeos.config.example.json) to create yours):
 
 - `providers` — the backends. Three types: `claude` (Anthropic API), `ollama` (local HTTP), `cli` (any subprocess agent; `{prompt}` is templated into args)
 - `routing` — regex rules that map prompts to providers; first match wins, falls back to `defaultProvider`

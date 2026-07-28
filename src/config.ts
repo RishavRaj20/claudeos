@@ -44,7 +44,10 @@ const ROOT = join(here, "..");
 export function loadConfig(): ClaudeOSConfig {
   const path = join(ROOT, "claudeos.config.json");
   if (!existsSync(path)) {
-    throw new Error(`Missing config file: ${path}`);
+    throw new Error(
+      `Missing config file: ${path}\n` +
+        `Create one from the template:  cp claudeos.config.example.json claudeos.config.json`,
+    );
   }
   return JSON.parse(readFileSync(path, "utf-8")) as ClaudeOSConfig;
 }
