@@ -14,19 +14,28 @@
     "claude-code": {
       "type": "cli",
       "command": "claude",
-      "args": ["-p", "{prompt}"],
+      "args": [
+        "-p",
+        "{prompt}"
+      ],
       "timeoutMs": 600000
     },
     "gemini": {
       "type": "cli",
       "command": "gemini",
-      "args": ["-p", "{prompt}"],
+      "args": [
+        "-p",
+        "{prompt}"
+      ],
       "timeoutMs": 600000
     },
     "codex": {
       "type": "cli",
       "command": "codex",
-      "args": ["exec", "{prompt}"],
+      "args": [
+        "exec",
+        "{prompt}"
+      ],
       "timeoutMs": 600000
     }
   },
@@ -38,11 +47,40 @@
   "mcpServers": {
     "filesystem": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/allowed/directory"]
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/path/to/allowed/directory"
+      ]
     }
   },
   "routing": [
-    { "match": "\\b(code|refactor|implement|debug|fix bug|write a script|repo)\\b", "provider": "claude-code" },
-    { "match": "\\b(summarize|summarise|translate|classify|extract)\\b", "provider": "ollama" }
-  ]
+    {
+      "match": "\\b(code|refactor|implement|debug|fix bug|write a script|repo)\\b",
+      "provider": "claude-code"
+    },
+    {
+      "match": "\\b(summarize|summarise|translate|classify|extract)\\b",
+      "provider": "ollama"
+    }
+  ],
+  "pipelines": {
+    "build": [
+      {
+        "name": "research",
+        "provider": "ollama",
+        "prompt": "Outline a concise approach (3-5 bullet points, no code) for this task: {input}"
+      },
+      {
+        "name": "implement",
+        "provider": "claude-code",
+        "prompt": "Task: {input}\n\nApproach outline:\n{prev}\n\nImplement it. Return only the final code."
+      },
+      {
+        "name": "verify",
+        "provider": "claude-code",
+        "prompt": "Task was: {input}\n\nImplementation:\n{implement}\n\nReview strictly for bugs. Reply 'LGTM' if correct, otherwise list issues."
+      }
+    ]
+  }
 }

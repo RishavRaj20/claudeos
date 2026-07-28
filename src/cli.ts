@@ -110,6 +110,56 @@ async function main(): Promise<void> {
       break;
     }
 
+    case "pipeline": {
+      // "claudeos pipeline"                -> list defined pipelines
+      // "claudeos pipeline <name> "input"" -> run a pipeline via the daemon
+      if (!(await daemonAlive())) {
+        console.error("pipelines require the daemon: start it with `claudeos start`");
+        process.exit(1);
+      }
+      if (rest.length === 0) {
+        const res = await fetch(`${BASE}/pipelines`);
+        const pipelines = (await res.json()) as Record<string, string[]>;
+        if (Object.keys(pipelines).length === 0) {
+          console.log("(no pipelines defined — add a `pipelines` block to claudeos.config.json)");
+          return;
+        }
+        for (const [n, steps] of Object.entries(pipelines)) {
+          console.log(`${n}:  ${steps.join(" → ")}`);
+        }
+        return;
+      }
+      const [pipelineName, ...inputParts] = rest;
+      const input = inputParts.join(" ");
+      if (!input) {
+        console.error('Usage: claudeos pipeline <name> "input"');
+        process.exit(1);
+      }
+      console.log(`running pipeline "${pipelineName}" ... (watch live: claudeos watch)\n`);
+      const res = await fetch(`${BASE}/pipelines/run`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name: pipelineName, input }),
+      });
+      const result = (await res.json()) as {
+        ok?: boolean;
+        error?: string;
+        steps?: Array<{ step: string; record: { provider: string; ok: boolean; output: string } }>;
+        output?: string;
+      };
+      if (result.error) {
+        console.error(result.error);
+        process.exit(1);
+      }
+      for (const s of result.steps ?? []) {
+        console.log(`── ${s.step}  [${s.record.provider}] ${s.record.ok ? "✓" : "✗"}`);
+        console.log(s.record.output.slice(0, 400).trim());
+        console.log("");
+      }
+      console.log(`pipeline ${result.ok ? "✓ complete" : "✗ failed"}`);
+      break;
+    }
+
     case "task": {
       const id = rest[0];
       if (!id) {
@@ -147,14 +197,28 @@ async function main(): Promise<void> {
       ws.addEventListener("message", (msg) => {
         const event = JSON.parse(String(msg.data)) as {
           type: string;
-          task: { taskId: string; status: string; prompt: string; record?: { provider: string; ok: boolean; output: string } };
+          task?: { taskId: string; status: string; prompt: string; record?: { provider: string; ok: boolean; output: string } };
+          name?: string;
+          step?: string;
+          provider?: string;
+          ok?: boolean;
         };
-        const t = event.task;
-        if (event.type === "task.finished" && t.record) {
-          console.log(`${event.type}  [${t.record.provider}] ${t.record.ok ? "✓" : "✗"}  ${t.prompt.slice(0, 50)}`);
-          console.log(`  ${t.record.output.slice(0, 200).replace(/\n+/g, " ")}\n`);
+        if (event.task) {
+          const t = event.task;
+          if (event.type === "task.finished" && t.record) {
+            console.log(`${event.type}  [${t.record.provider}] ${t.record.ok ? "✓" : "✗"}  ${t.prompt.slice(0, 50)}`);
+            console.log(`  ${t.record.output.slice(0, 200).replace(/\n+/g, " ")}\n`);
+          } else {
+            console.log(`${event.type}  ${t.taskId.slice(0, 8)}  ${t.prompt.slice(0, 50)}`);
+          }
+        } else if (event.type.startsWith("pipeline.")) {
+          const parts = [event.type.padEnd(24), event.name];
+          if (event.step) parts.push(`step=${event.step}`);
+          if (event.provider) parts.push(`[${event.provider}]`);
+          if (event.ok !== undefined) parts.push(event.ok ? "✓" : "✗");
+          console.log(parts.join("  "));
         } else {
-          console.log(`${event.type}  ${t.taskId.slice(0, 8)}  ${t.prompt.slice(0, 50)}`);
+          console.log(JSON.stringify(event));
         }
       });
       ws.addEventListener("close", () => process.exit(0));
@@ -265,6 +329,7 @@ Usage:
   claudeos run "task" [--provider name]   Route a task (auto or explicit)
   claudeos run "task" --async             Submit and return immediately
   claudeos task [id]                      Async task status / list
+  claudeos pipeline [name "input"]        List or run multi-step pipelines
   claudeos watch                          Live-stream task events (WebSocket)
   claudeos runs                           Recent task history
   claudeos memory                         List shared memory vault entries

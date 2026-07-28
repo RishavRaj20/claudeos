@@ -5,6 +5,7 @@ import { buildProviders } from "../providers/index.ts";
 import { McpManager } from "../mcp/manager.ts";
 import { Scheduler } from "./scheduler.ts";
 import { TaskManager, type TaskEvent } from "./tasks.ts";
+import { runPipeline } from "./pipeline.ts";
 
 // The ClaudeOS daemon: a local HTTP API any client (CLI today, Tauri UI in
 // phase 2) can attach to.
@@ -87,6 +88,21 @@ export async function startDaemon(config: ClaudeOSConfig): Promise<void> {
         else send(200, task);
       } else if (req.method === "GET" && req.url === "/tasks") {
         send(200, taskManager.list());
+      } else if (req.method === "GET" && req.url === "/pipelines") {
+        send(200, Object.fromEntries(
+          Object.entries(config.pipelines ?? {}).map(([n, steps]) => [
+            n,
+            steps.map((s) => `${s.name}${s.provider ? ` (${s.provider})` : ""}`),
+          ]),
+        ));
+      } else if (req.method === "POST" && req.url === "/pipelines/run") {
+        const body = (await readBody()) as { name?: string; input?: string };
+        if (!body.name || !body.input) {
+          send(400, { error: "Missing 'name' or 'input'" });
+          return;
+        }
+        const result = await runPipeline(scheduler, config, body.name, body.input, broadcast);
+        send(result.ok ? 200 : 500, result);
       } else if (req.method === "GET" && req.url?.startsWith("/runs")) {
         send(200, scheduler.recentRuns());
       } else if (req.method === "POST" && req.url === "/run") {
@@ -105,14 +121,15 @@ export async function startDaemon(config: ClaudeOSConfig): Promise<void> {
     }
   });
 
-  // WebSocket: GET /ws — pushes task lifecycle events to every client.
+  // WebSocket: GET /ws — pushes task + pipeline lifecycle events to clients.
   const wss = new WebSocketServer({ server, path: "/ws" });
-  taskManager.on("event", (event: TaskEvent) => {
+  const broadcast = (event: unknown) => {
     const payload = JSON.stringify(event);
     for (const client of wss.clients) {
       if (client.readyState === 1) client.send(payload);
     }
-  });
+  };
+  taskManager.on("event", (event: TaskEvent) => broadcast(event));
 
   server.listen(config.port, () => {
     const toolCount = mcp.listTools().length;

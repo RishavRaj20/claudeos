@@ -86,6 +86,13 @@ node src/cli.ts mcp                                     # list drivers + tools
 - **📓 Human-readable memory** — every run is a markdown file with frontmatter; point Obsidian at `~/.claudeos/memory/` and browse your agents' entire history
 - **📥 Driver registry** — `claudeos mcp registry` lists 9 curated drivers (fetch, github, puppeteer, sqlite, ...); `claudeos mcp install <name>` writes the config for you
 - **⏱ Async tasks + live events** — `claudeos run "..." --async` returns instantly; follow with `claudeos task <id>` or stream every task's lifecycle over WebSocket with `claudeos watch`
+- **🔗 Multi-step pipelines** — chain providers into workflows where each step's output feeds the next via `{input}` / `{prev}` / `{stepname}` templates:
+  ```
+  $ claudeos pipeline build "a python function is_palindrome(s)"
+  ── research   [ollama] ✓        outline from a local model
+  ── implement  [claude-code] ✓   def is_palindrome(s): ...
+  ── verify     [claude-code] ✓   LGTM
+  ```
 - **🌐 Local HTTP + WS API** — `GET /status`, `GET /mcp`, `POST /run`, `POST /tasks`, `ws://:7777/ws`; the CLI is just a client, so any UI can attach (Tauri desktop app coming in phase 2)
 - **📦 Zero build step** — modern Node runs the TypeScript directly; one runtime dependency worth naming (`@anthropic-ai/sdk`) plus the MCP SDK
 
@@ -145,7 +152,7 @@ Everything lives in `claudeos.config.json` (gitignored — copy [claudeos.config
 - [x] `claudeos mcp install <name>` — one-command driver registry (9 curated MCP servers)
 - [x] Async tasks + WebSocket streaming — `run --async`, `claudeos task`, `claudeos watch`
 - [x] Embedding-based recall — semantic memory search via local Ollama embeddings (`nomic-embed-text`), with keyword fallback when Ollama is offline
-- [ ] Multi-step pipelines (research → implement → verify across providers)
+- [x] Multi-step pipelines — research → implement → verify chains across providers, defined in config, streamed step-by-step over WebSocket
 - [ ] **Phase 2:** Rust core + Tauri desktop UI (attaches to the same daemon API)
 
 ## 🤝 Contributing

@@ -33,6 +33,12 @@ export interface MemoryConfig {
   };
 }
 
+export interface PipelineStep {
+  name: string;
+  provider?: string; // omit to use routing/default
+  prompt: string; // template: {input}, {prev}, {<stepname>}
+}
+
 export interface ClaudeOSConfig {
   port: number;
   defaultProvider: string;
@@ -40,6 +46,7 @@ export interface ClaudeOSConfig {
   routing: RoutingRule[];
   mcpServers?: Record<string, McpServerEntry>;
   memory?: MemoryConfig;
+  pipelines?: Record<string, PipelineStep[]>;
 }
 
 const here = dirname(fileURLToPath(import.meta.url));
